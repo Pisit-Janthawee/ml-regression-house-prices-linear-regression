@@ -1,5 +1,37 @@
 # House Prices : Linear Regression RMSE 0.109
 
+## Objective
+
+![pipeline](assets/house_pipeline.png)
+
+- **Problem** → buyers, sellers and agents price houses by gut feeling and a few "comparable" sales; a 10 % mistake on a $180k house is $18k
+- **Why this repo** → build a valuation that is accurate *and* explainable, starting from one feature and adding complexity only when cross-validation says it helps
+- **Real-world use** → a quick price estimate with a typical miss of ~12 %, plus the reasons (size, quality, neighbourhood) an agent can show a client
+
+## Highlights
+
+**Question:** what makes a house expensive in Ames?
+
+**Answer:** size, quality and place. Total floor area is the strongest single feature (correlation 0.83 with log price); each step up the quality scale (Fair → Typical → Good → Excellent) multiplies the median price by 1.6-1.7; neighbourhood medians range from $88k to $315k.
+
+| Lasso effect (per standard deviation or vs base) | Price change |
+|---|---|
+| Living area | +9 % |
+| Crawford neighbourhood | +10 % |
+| Commercial zoning | −24 % |
+
+**Question:** how close can a transparent model get?
+
+**Answer:** a typical miss of 11.6 % (CV RMSE 0.109 on log price) for a Lasso + LightGBM average; Lasso alone reaches 11.8 % and keeps only 100 of 249 columns, so its price drivers can be read directly.
+
+![model comparison](assets/05_model_comparison.png)
+
+**Question:** should "outliers" be removed first?
+
+**Answer:** no. The z-score rule from the earlier version flags 178 real houses (12 %), including every house above $451,950; removing them makes the model worse (0.1207 vs 0.1120), because it deletes the top of the market, not errors.
+
+![flagged houses](assets/07_outlier_flagged.png)
+
 ## [1/9] Overview
 
 - **Data** → [House Prices: Advanced Regression Techniques](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques) · 1,460 sold houses in Ames, Iowa · 79 features
