@@ -5,7 +5,7 @@
 - **Data** → [House Prices: Advanced Regression Techniques](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques) · 1,460 sold houses in Ames, Iowa · 79 features
 - **Task** → predict `SalePrice`
 - **Metric** → RMSE on log price (the competition score)
-- **Notebook** → `01_house_prices_linear_regression.ipynb`
+- **Notebook** → `house_prices_linear_regression.ipynb`
 - **Idea** → build linear regression from one feature to all of them, and let the formula decide each transform
 - **Result** → cross-validated RMSE **0.109** (typical miss 11.6%) for a Lasso + LightGBM blend
 
