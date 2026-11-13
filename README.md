@@ -1,13 +1,16 @@
-# House Prices: Linear Regression, Formula First
+# House Prices : Linear Regression RMSE 0.109
 
-## [1/8] Overview
+## [1/9] Overview
 
 - **Data** → [House Prices: Advanced Regression Techniques](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques) · 1,460 sold houses in Ames, Iowa · 79 features
 - **Task** → predict `SalePrice`
 - **Metric** → RMSE on log price (the competition score)
-- **Notebook** → `house_prices_linear_regression.ipynb`
+- **Notebooks** → 2 versions, same data and models
+  - `house_prices_linear_regression.ipynb` → v1, data to models (README [3/9]-[7/9])
+  - `house_prices_linear_regression_outliers.ipynb` → v2, v1 plus the outlier treatment section [8/9] (Kaggle title below)
 - **Idea** → build linear regression from one feature to all of them, and let the formula decide each transform
 - **Result** → cross-validated RMSE **0.109** (typical miss 11.6%) for a Lasso + LightGBM blend
+- **Outliers** → the earlier version's z-score trimmer and 5 alternatives re-tested → none beats leaving the values alone
 
 | Model (same 5 folds) | CV RMSE (log) | Typical miss |
 |---|---|---|
@@ -19,15 +22,17 @@
 | LightGBM | 0.116 | 12.3% |
 | **Blend (Lasso + LightGBM)** | **0.109** | **11.6%** |
 
-## [2/8] Run on Kaggle
+## [2/9] Run on Kaggle
 
-- **Import** → Create → Import Notebook → upload the `.ipynb` (or paste its GitHub URL)
+- **Title** → House Prices : Linear Regression RMSE 0.109
+- **Import** → Create → Import Notebook → upload either `.ipynb` (v2 for the full story)
 - **Input** → competition `house-prices-advanced-regression-techniques`
 - **Accelerator** → none (CPU, a few minutes)
 - **Settings** → top cell of the notebook, documented in its note
 - **Safety** → `SAVE_SUBMISSION = False` → previews the predictions, writes nothing
+- **Outlier trimmer** (v2) → `TRIM_OUTLIERS = None`; set `'zscore'`, `'iqr'` or `'winsorize'` to rerun every model with it
 
-## [3/8] Data and target
+## [3/9] Data and target
 
 - **Missing values** → 16 of the 19 gappy columns mean "the house has none" (no pool, alley, fence, garage, basement)
   - filled with `'None'` / 0 instead of dropping the column
@@ -36,7 +41,7 @@
 
 ![target](assets/01_target_log.png)
 
-## [4/8] Simple linear regression
+## [4/9] Simple linear regression
 
 - **Slope** → \$107 per sq ft of living area, by hand and by scikit-learn
 - **Partial-sale giants** → 2 houses above 4,000 sq ft sold unfinished for \$160k-185k
@@ -46,7 +51,7 @@
 
 ![simple linear regression](assets/02_slr_giants.png)
 
-## [5/8] Assumptions
+## [5/9] Assumptions
 
 - **Homoscedasticity** → raw-price residuals fan out (Breusch-Pagan LM 249) → log price → LM 23
 - **Normality** → raw residuals skew right (0.80) → log residuals near normal, left tail of cheap houses
@@ -54,7 +59,7 @@
 
 ![residuals](assets/03_residuals_raw_vs_log.png)
 
-## [6/8] Features
+## [6/9] Features
 
 - **Ordinal scales** (`Ex … Po`) → 5 … 1, absent = 0 → `ExterQual` medians step ×1.6-1.7 per level = equal steps in log price
 - **Nominal categories** → one-hot, categories rarer than 10 houses merged → 25 neighbourhoods from \$88k to \$315k
@@ -62,7 +67,7 @@
 - **Engineered** → `TotalSF` (correlation 0.83, strongest feature), `TotalBath`, `TotalPorchSF`, age at sale, `Has…` flags
 - **Leakage** → every fitted step (imputer, skew check, scaler, encoder) lives in a scikit-learn pipeline, refit per fold
 
-## [7/8] Models
+## [7/9] Models
 
 - **Plain MLR** → good on 4 folds (0.12-0.13), collapses on the 5th: one house predicted at \$187,858,413
 - **Ridge / Lasso** → penalty tuned by cross-validation, fold spread 0.164 → below 0.007
@@ -74,7 +79,38 @@
 
 ![model comparison](assets/05_model_comparison.png)
 
-## [8/8] Next steps
+## [8/9] Outlier treatment
+
+- **Notebook** → `house_prices_linear_regression_outliers.ipynb` only
+- **Earlier version** → z-score per feature (`LotArea`, `LotFrontage`, `TotalBsmtSF`, `1stFlrSF`, `GrLivArea`, `SalePrice`), flagged values → missing → imputed, before the train/test split
+- **Now** → the same rule as `OutlierTrimmer` inside the pipeline (fences fitted per training fold, never on `SalePrice`), next to 5 alternatives
+- **What gets flagged** → the columns are skewed, so the fences misbehave
+  - `LotArea` (skewness 12.6) → z-score lower fence −8,857 sq ft → only big lots flagged (21); IQR flags 66
+  - `TotalBsmtSF` → z-score flags 86, of which 37 are houses **without a basement**
+  - "→ median" turns the flagged values into a spike at the median: a 4,476 sq ft \$745k house enters as ~1,430 sq ft
+
+![features before and after](assets/06_outlier_features.png)
+
+- **Real houses** → the 5 z-score rules flag 178 houses (12%), median \$251,646 vs \$158,000, including every house above \$451,950 → the trimmer removes the top of the market, not errors
+
+![flagged houses](assets/07_outlier_flagged.png)
+
+| Treatment (Lasso, same 5 folds) | CV RMSE (log) | vs none |
+|---|---|---|
+| **None (main notebook)** | **0.1120** | — |
+| Z-score → median (earlier version) | 0.1141 | +0.0021 |
+| IQR → median | 0.1144 | +0.0024 |
+| Winsorize 1-99% | 0.1128 | +0.0008 |
+| Drop rows: z-score features (~142 per fold) | 0.1207 | +0.0087 |
+| Drop rows: features + `SalePrice` (~157 per fold) | 0.1193 | +0.0073 |
+| Huber loss (α ≈ 56, no trimming) | 0.1117 | −0.0003 (within fold noise) |
+
+- **Why** → `log1p` on skewed columns, log price and the Lasso penalty already tame the extremes → trimming only deletes information about big houses
+- **Decision** → `TRIM_OUTLIERS = None`; the 2 partial-sale giants stay the only removal
+
+![outlier treatments](assets/08_outlier_comparison.png)
+
+## [9/9] Next steps
 
 - **Leaderboard check** → submit and compare the public score with the cross-validated 0.109
 - **Unusual sales** → flag or model abnormal / family / partial sales separately
