@@ -79,6 +79,9 @@
 - **Partial-sale giants** → 2 houses above 4,000 sq ft sold unfinished for \$160k-185k
   - removing them moves the slope to \$115 per sq ft
   - the 2 genuine giants (\$745k, \$755k) stay
+- **Why 2 houses can tilt the line** → least squares minimises Σ(y − ŷ)²; the 2 are missed by 13× and 18× a typical house, which the square turns into 179× and 342× → 7.1 % of the total squared miss from 0.14 % of the rows
+
+![the square pulls the line](assets/m_ols_square_pull.png)
 - **Gradient descent** → reaches the closed-form answer (slope 0.7252) in about 30 steps
 
 ![simple linear regression](assets/02_slr_giants.png)
@@ -103,6 +106,7 @@
 
 - **Plain MLR** → good on 4 folds (0.12-0.13), collapses on the 5th: one house predicted at \$187,858,413
 - **Ridge / Lasso** → penalty tuned by cross-validation, fold spread 0.164 → below 0.007
+  - α Σβ² (Ridge) makes big coefficients expensive, so overlapping columns share the credit; α Σ|β| (Lasso) charges every unit the same, so weak columns land on exactly 0
 - **Lasso** → keeps 100 of 249 columns; strongest effects: commercial zoning −24%, Crawford +10%, living area +9% per std
 - **LightGBM** → 0.116 alone, best when averaged with Lasso (0.109)
 - **Largest misses** → abnormal, family and partial sales, and houses under \$65,000
@@ -136,6 +140,10 @@
 | Drop rows: z-score features (~142 per fold) | 0.1207 | +0.0087 |
 | Drop rows: features + `SalePrice` (~157 per fold) | 0.1193 | +0.0073 |
 | Huber loss (α ≈ 56, no trimming) | 0.1117 | −0.0003 (within fold noise) |
+
+- **Huber loss** → squares misses up to δ, counts bigger ones in a straight line; on the one-feature log-price line the 2 partial-sale giants would carry 7 % of the squared cost but only 2 % of the Huber cost
+
+![huber on real residuals](assets/m_huber_real_residuals.png)
 
 - **Why** → `log1p` on skewed columns, log price and the Lasso penalty already tame the extremes → trimming only deletes information about big houses
 - **Decision** → `TRIM_OUTLIERS = None`; the 2 partial-sale giants stay the only removal
