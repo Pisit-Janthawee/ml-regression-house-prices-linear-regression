@@ -2,7 +2,7 @@
 
 ## Objective
 
-![pipeline](assets/house_pipeline.png)
+![pipeline](assets/png/house_pipeline.png)
 
 - **Problem** → buyers, sellers and agents price houses by gut feeling and a few "comparable" sales; a 10 % mistake on a $180k house is $18k
 - **Why this repo** → build a valuation that is accurate *and* explainable, starting from one feature and adding complexity only when cross-validation says it helps
@@ -24,13 +24,13 @@
 
 **Answer:** a typical miss of 11.6 % (CV RMSE 0.109 on log price) for a Lasso + LightGBM average; Lasso alone reaches 11.8 % and keeps only 100 of 249 columns, so its price drivers can be read directly.
 
-![model comparison](assets/05_model_comparison.png)
+![model comparison](assets/png/05_model_comparison.png)
 
 **Question:** should "outliers" be removed first?
 
 **Answer:** no. The z-score rule from the earlier version flags 178 real houses (12 %), including every house above $451,950; removing them makes the model worse (0.1207 vs 0.1120), because it deletes the top of the market, not errors.
 
-![flagged houses](assets/07_outlier_flagged.png)
+![flagged houses](assets/png/07_outlier_flagged.png)
 
 ## [1/9] Overview
 
@@ -71,7 +71,7 @@
   - only `LotFrontage`, `MasVnrArea`, `Electrical` are real unknowns → median, imputed inside each fold
 - **Target** → median \$163,000, skewness 1.88 → `log(1 + price)` → skewness 0.12
 
-![target](assets/01_target_log.png)
+![target](assets/png/01_target_log.png)
 
 ## [4/9] Simple linear regression
 
@@ -81,10 +81,10 @@
   - the 2 genuine giants (\$745k, \$755k) stay
 - **Why 2 houses can tilt the line** → least squares minimises Σ(y − ŷ)²; the 2 are missed by 13× and 18× a typical house, which the square turns into 179× and 342× → 7.1 % of the total squared miss from 0.14 % of the rows
 
-![the square pulls the line](assets/m_ols_square_pull.png)
+![the square pulls the line](assets/png/m_ols_square_pull.png)
 - **Gradient descent** → reaches the closed-form answer (slope 0.7252) in about 30 steps
 
-![simple linear regression](assets/02_slr_giants.png)
+![simple linear regression](assets/png/02_slr_giants.png)
 
 ## [5/9] Assumptions
 
@@ -92,7 +92,7 @@
 - **Normality** → raw residuals skew right (0.80) → log residuals near normal, left tail of cheap houses
 - **Multicollinearity** → highest VIF 5.4 (`GarageCars` vs `GarageArea`, correlation 0.88) → handled by Ridge / Lasso
 
-![residuals](assets/03_residuals_raw_vs_log.png)
+![residuals](assets/png/03_residuals_raw_vs_log.png)
 
 ## [6/9] Features
 
@@ -111,9 +111,9 @@
 - **LightGBM** → 0.116 alone, best when averaged with Lasso (0.109)
 - **Largest misses** → abnormal, family and partial sales, and houses under \$65,000
 
-![ridge and lasso](assets/04_ridge_lasso_alpha.png)
+![ridge and lasso](assets/png/04_ridge_lasso_alpha.png)
 
-![model comparison](assets/05_model_comparison.png)
+![model comparison](assets/png/05_model_comparison.png)
 
 ## [8/9] Outlier treatment
 
@@ -125,11 +125,11 @@
   - `TotalBsmtSF` → z-score flags 86, of which 37 are houses **without a basement**
   - "→ median" turns the flagged values into a spike at the median: a 4,476 sq ft \$745k house enters as ~1,430 sq ft
 
-![features before and after](assets/06_outlier_features.png)
+![features before and after](assets/png/06_outlier_features.png)
 
 - **Real houses** → the 5 z-score rules flag 178 houses (12%), median \$251,646 vs \$158,000, including every house above \$451,950 → the trimmer removes the top of the market, not errors
 
-![flagged houses](assets/07_outlier_flagged.png)
+![flagged houses](assets/png/07_outlier_flagged.png)
 
 | Treatment (Lasso, same 5 folds) | CV RMSE (log) | vs none |
 |---|---|---|
@@ -143,12 +143,12 @@
 
 - **Huber loss** → squares misses up to δ, counts bigger ones in a straight line; on the one-feature log-price line the 2 partial-sale giants would carry 7 % of the squared cost but only 2 % of the Huber cost
 
-![huber on real residuals](assets/m_huber_real_residuals.png)
+![huber on real residuals](assets/png/m_huber_real_residuals.png)
 
 - **Why** → `log1p` on skewed columns, log price and the Lasso penalty already tame the extremes → trimming only deletes information about big houses
 - **Decision** → `TRIM_OUTLIERS = None`; the 2 partial-sale giants stay the only removal
 
-![outlier treatments](assets/08_outlier_comparison.png)
+![outlier treatments](assets/png/08_outlier_comparison.png)
 
 ## [9/9] Next steps
 
